@@ -85,5 +85,18 @@ namespace Shoppi.Client.Services
                 return null;
             }
         }
+
+        public async Task<List<CategoryDTOClient>> GetCategories()
+        {
+            try
+            {
+                return await _http.GetFromJsonAsync<List<CategoryDTOClient>>("api/categories")
+                       ?? new List<CategoryDTOClient>();
+            }
+            catch
+            {
+                return new List<CategoryDTOClient>();
+            }
+        }
     }
 }

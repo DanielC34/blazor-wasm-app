@@ -5,41 +5,267 @@
 
 <h3>Products</h3>
 
+<!-- FEEDBACK -->
+@if (!string.IsNullOrEmpty(message))
+{
+    <p style="color:green; font-weight:bold;">@message</p>
+}
+
+<!-- VALIDATION ERROR -->
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <p style="color:red; font-weight:bold;">@errorMessage</p>
+}
+
+<!-- ===================== FORM ===================== -->
+<h4>@(isEditing ? "Edit Product" : "Add Product")</h4>
+
+<div style="margin-bottom:20px; display:flex; flex-direction:column; gap:10px; max-width:400px;">
+
+    <!-- NAME -->
+    <div>
+        <label><strong>Product Name</strong></label>
+        <input style="width:100%; padding:6px;"
+               placeholder="Enter product name here"
+               @bind="newProduct.Name" />
+    </div>
+
+    <!-- PRICE -->
+    <div>
+        <label><strong>Price</strong></label>
+        <input style="width:100%; padding:6px;"
+               type="number"
+               placeholder="Enter price here"
+               @bind="newProduct.Price" />
+    </div>
+
+    <!-- DESCRIPTION -->
+    <div>
+        <label><strong>Description</strong></label>
+        <input style="width:100%; padding:6px;"
+               placeholder="Enter product description here"
+               @bind="newProduct.Description" />
+    </div>
+
+    <!-- CATEGORY -->
+    <div>
+        <label><strong>Category</strong></label>
+        <select style="width:100%; padding:6px;"
+                @bind="newProduct.CategoryId">
+
+            <option value="">Select Category</option>
+
+            @foreach (var category in categories)
+            {
+                <option value="@category.Id">
+                    @category.Name
+                </option>
+            }
+
+        </select>
+    </div>
+
+    <!-- BUTTONS -->
+    <div style="display:flex; gap:10px; margin-top:10px;">
+
+        @if (!isEditing)
+        {
+            <button style="background:green; color:white; border:none; padding:6px 12px; border-radius:5px;"
+                    disabled="@(!IsFormValid())"
+                    @onclick="Add">
+                Add
+            </button>
+        }
+        else
+        {
+            <button style="background:orange; color:white; border:none; padding:6px 12px; border-radius:5px;"
+                    disabled="@(!IsFormValid())"
+                    @onclick="Update">
+                Update
+            </button>
+
+            <button style="background:gray; color:white; border:none; padding:6px 12px; border-radius:5px;"
+                    @onclick="CancelEdit">
+                Cancel
+            </button>
+        }
+
+    </div>
+</div>
+
+<!-- ===================== PRODUCTS ===================== -->
 @if (products == null)
 {
     <p>Loading...</p>
 }
-else if (!products.Any())
-{
-    <p>No products found.</p>
-}
 else
 {
-    <table>
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Price</th>
-            </tr>
-        </thead>
+    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:15px;">
 
-        <tbody>
-            @foreach (var p in products)
-            {
-                <tr>
-                    <td>@p.Name</td>
-                    <td>@p.Price</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+        @foreach (var product in products)
+        {
+            <div style="border:1px solid #ddd; padding:15px; border-radius:10px;">
+
+                <h4>@product.Name</h4>
+                <p><strong>Price:</strong> @product.Price</p>
+                <p>@product.Description</p>
+
+                <small>Category: @product.CategoryName</small>
+
+                <div style="margin-top:10px; display:flex; gap:5px;">
+
+                    <button style="background:orange; color:white; border:none; padding:5px 10px;"
+                            @onclick="() => Edit(product)">
+                        Edit
+                    </button>
+
+                    <button style="background:red; color:white; border:none; padding:5px 10px;"
+                            @onclick="() => Delete(product.Id)">
+                        Delete
+                    </button>
+
+                </div>
+
+            </div>
+        }
+    </div>
 }
 
 @code {
+
     private IEnumerable<ProductDTOClient>? products;
+    private List<CategoryDTOClient> categories = new();
+
+    private ProductDTOClient newProduct = new();
+    private string? message;
+    private string? errorMessage;
+
+    private bool isEditing = false;
+    private int editingId;
 
     protected override async Task OnInitializedAsync()
     {
         products = await ProductService.GetProducts();
+        categories = await ProductService.GetCategories();
+    }
+
+    // ================= VALIDATION =================
+    private bool Validate()
+    {
+        errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(newProduct.Name))
+        {
+            errorMessage = "Product name is required.";
+            return false;
+        }
+
+        if (newProduct.Price <= 0)
+        {
+            errorMessage = "Price must be greater than 0.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(newProduct.Description))
+        {
+            errorMessage = "Description is required.";
+            return false;
+        }
+
+        if (newProduct.CategoryId <= 0)
+        {
+            errorMessage = "Please select a category.";
+            return false;
+        }
+
+        return true;
+    }
+
+    // ================= CREATE =================
+    private async Task Add()
+    {
+        if (!Validate()) return;
+
+        var created = await ProductService.AddProduct(newProduct);
+
+        if (created != null)
+        {
+            products = await ProductService.GetProducts();
+            newProduct = new ProductDTOClient();
+
+            message = "Product added successfully!";
+            await ClearMessage();
+        }
+    }
+
+    // ================= UPDATE =================
+    private async Task Update()
+    {
+        if (!Validate()) return;
+
+        var success = await ProductService.UpdateProduct(newProduct);
+
+        if (success)
+        {
+            products = await ProductService.GetProducts();
+            newProduct = new ProductDTOClient();
+
+            isEditing = false;
+            editingId = 0;
+
+            message = "Product updated successfully!";
+            await ClearMessage();
+        }
+    }
+
+    private void Edit(ProductDTOClient product)
+    {
+        newProduct = new ProductDTOClient
+        {
+            Id = product.Id,
+            Name = product.Name,
+            Price = product.Price,
+            Description = product.Description,
+            CategoryId = product.CategoryId,
+            CategoryName = product.CategoryName
+        };
+
+        isEditing = true;
+        editingId = product.Id;
+    }
+
+    private void CancelEdit()
+    {
+        newProduct = new ProductDTOClient();
+        isEditing = false;
+        editingId = 0;
+        errorMessage = null;
+    }
+
+    private async Task Delete(int id)
+    {
+        var success = await ProductService.DeleteProduct(id);
+
+        if (success)
+        {
+            products = await ProductService.GetProducts();
+            message = "Product deleted successfully!";
+            await ClearMessage();
+        }
+    }
+
+    private async Task ClearMessage()
+    {
+        await Task.Delay(2000);
+        message = null;
+        StateHasChanged();
+    }
+
+    private bool IsFormValid()
+    {
+        return !string.IsNullOrWhiteSpace(newProduct.Name)
+               && newProduct.Price > 0
+               && !string.IsNullOrWhiteSpace(newProduct.Description)
+               && newProduct.CategoryId > 0;
     }
 }

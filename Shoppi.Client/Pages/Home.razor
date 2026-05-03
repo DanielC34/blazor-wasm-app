@@ -1,7 +1,54 @@
 ﻿@page "/"
+@using MudBlazor
+@using Shoppi.Client.DTOs.ProductDTOClient
+@using Shoppi.Client.Services.Contracts
+@inject IProductService ProductService
+@inject NavigationManager Nav
 
-<PageTitle>Home</PageTitle>
+<!-- Top bar -->
+<MudAppBar Color="Color.Primary" Elevation="4">
+    <MudText Typo="Typo.h6">Product Dashboard</MudText>
 
-<h1>Hello, world!</h1>
+    <MudSpacer />
 
+    <!-- Navigate to full CRUD page -->
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Secondary"
+               OnClick="@(() => Nav.NavigateTo("/products"))">
+        Manage Products
+    </MudButton>
+</MudAppBar>
 
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+
+    <!-- READ ONLY TABLE -->
+    <MudTable T="ProductDTOClient"
+              Items="@(products ?? Enumerable.Empty<ProductDTOClient>())"
+              Hover="true"
+              Bordered="true"
+              Striped="true">
+
+        <HeaderContent>
+            <MudTh>Name</MudTh>
+            <MudTh>Price</MudTh>
+        </HeaderContent>
+
+        <RowTemplate>
+            <MudTd DataLabel="Name">@context.Name</MudTd>
+            <MudTd DataLabel="Price">@context.Price</MudTd>
+        </RowTemplate>
+
+    </MudTable>
+
+</MudContainer>
+
+@code {
+
+    // Read-only data
+    private IEnumerable<ProductDTOClient> products = new List<ProductDTOClient>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        products = await ProductService.GetProducts();
+    }
+}
