@@ -1,10 +1,17 @@
 ﻿@namespace Shoppi.Client
 
-<Router AppAssembly="@typeof(App).Assembly">
-    <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(Shoppi.Client.Shared.MainLayout)" />
-    </Found>
-    <NotFound>
-        <h1>Sorry, page not found.</h1>
-    </NotFound>
-</Router>
+<MudThemeProvider>
+    <MudDialogProvider />
+    <MudSnackbarProvider />
+
+    <Router AppAssembly="@typeof(App).Assembly">
+        <Found Context="routeData">
+            <RouteView RouteData="@routeData" DefaultLayout="@typeof(Shoppi.Client.Shared.MainLayout)" />
+        </Found>
+
+        <NotFound>
+            <h1>Sorry, page not found.</h1>
+        </NotFound>
+    </Router>
+
+</MudThemeProvider>

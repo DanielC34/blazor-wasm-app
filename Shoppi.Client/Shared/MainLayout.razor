@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+@using MudBlazor
 
 <MudThemeProvider />
 <MudDialogProvider />
@@ -6,35 +7,69 @@
 
 <MudLayout>
 
-    <!-- TOP NAVBAR -->
-    <MudAppBar Elevation="1">
-        <MudText Typo="Typo.h6">
-            Shoppi Admin
+    <!-- TOP BAR -->
+    @* Added Color="Color.Primary" to match your dashboard's brand identity *@
+    <MudAppBar Elevation="1" Color="Color.Primary">
+
+        <!-- MENU BUTTON -->
+        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                       Color="Color.Inherit"
+                       Edge="Edge.Start"
+                       OnClick="ToggleDrawer" />
+
+        <MudText Typo="Typo.h6" Class="ml-3">
+            Shoppi Admin Dashboard
         </MudText>
+
     </MudAppBar>
 
     <!-- SIDEBAR -->
-    <MudDrawer Open="true"
-               Elevation="1"
-               Variant="DrawerVariant.Mini">
+    @* Increased Elevation and added padding to the NavMenu for a cleaner look *@
+    <MudDrawer @bind-Open="_drawerOpen"
+               Elevation="2"
+               ClipMode="DrawerClipMode.Always"
+               Variant="DrawerVariant.Responsive">
 
-        <MudNavMenu>
+        <MudNavMenu Class="pa-2">
+            <div class="pa-4">
+                <MudText Typo="Typo.subtitle2" Color="Color.Secondary">MANAGEMENT</MudText>
+            </div>
 
-            <MudNavLink Href="/" Match="NavLinkMatch.All">
+            <MudNavLink Href="/"
+                        Match="NavLinkMatch.All"
+                        Icon="@Icons.Material.Filled.Home">
                 Home
             </MudNavLink>
 
-            <MudNavLink Href="/products">
+            <MudNavLink Href="/products"
+                        Icon="@Icons.Material.Filled.Inventory">
                 Products
             </MudNavLink>
-
         </MudNavMenu>
 
     </MudDrawer>
 
     <!-- PAGE CONTENT -->
-    <MudMainContent Class="pa-4">
-        @Body
+    @* Added py-8 (Vertical Padding) and a light grey background to create contrast for the white cards *@
+    <MudMainContent Style="background-color: var(--mud-palette-background-grey); min-height: 100vh;" Class="py-8">
+
+        <MudContainer MaxWidth="MaxWidth.Large">
+
+            @Body
+
+        </MudContainer>
+
     </MudMainContent>
 
 </MudLayout>
+
+@code {
+
+    private bool _drawerOpen = true;
+
+    private void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+}

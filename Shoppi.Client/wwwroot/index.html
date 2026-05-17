@@ -1,15 +1,84 @@
 ﻿<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Shoppi</title>
     <base href="/" />
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+
+    <style>
+        /* Loading Screen Styles */
+        .loading-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #fafafa;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .mud-wasm-spinner {
+            width: 50px;
+            height: 50px;
+            border: 6px solid #e0e0e0;
+            border-top: 6px solid #594AE2; /* Using MudBlazor Primary Purple */
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            color: #594AE2;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Error UI Styling */
+        #blazor-error-ui {
+            background: #ffeb3b;
+            bottom: 0;
+            box-shadow: 0 -1px 10px rgba(0,0,0,0.2);
+            display: none;
+            left: 0;
+            padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+            position: fixed;
+            width: 100%;
+            z-index: 1000;
+        }
+    </style>
 </head>
+
 <body>
 
-    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+    <div id="app">
+        <div class="loading-wrapper">
+            <div class="mud-wasm-spinner"></div>
+            <div class="loading-text">Initializing Shoppi...</div>
+        </div>
+    </div>
 
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+
+    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
     <script src="_framework/blazor.webassembly.js"></script>
+
 </body>
 </html>

@@ -1,271 +1,165 @@
 ﻿@page "/products"
+
+@using Shoppi.Client.DTOs
 @using Shoppi.Client.DTOs.ProductDTOClient
 @using Shoppi.Client.Services.Contracts
+@using MudBlazor
+@using Shoppi.Client.Shared.Components
+
 @inject IProductService ProductService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
-<h3>Products</h3>
+<div class="mt-4 pt-6">
 
-<!-- FEEDBACK -->
-@if (!string.IsNullOrEmpty(message))
-{
-    <p style="color:green; font-weight:bold;">@message</p>
-}
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudText Typo="Typo.h4">Products</MudText>
 
-<!-- VALIDATION ERROR -->
-@if (!string.IsNullOrEmpty(errorMessage))
-{
-    <p style="color:red; font-weight:bold;">@errorMessage</p>
-}
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="OpenAdd">
+            Add Product
+        </MudButton>
+    </MudStack>
 
-<!-- ===================== FORM ===================== -->
-<h4>@(isEditing ? "Edit Product" : "Add Product")</h4>
+    <MudDivider Class="my-3" />
 
-<div style="margin-bottom:20px; display:flex; flex-direction:column; gap:10px; max-width:400px;">
+    @if (products is null)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else if (!products.Any())
+    {
+        <MudAlert Severity="Severity.Info">
+            No products found
+        </MudAlert>
+    }
+    else
+    {
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:15px;">
 
-    <!-- NAME -->
-    <div>
-        <label><strong>Product Name</strong></label>
-        <input style="width:100%; padding:6px;"
-               placeholder="Enter product name here"
-               @bind="newProduct.Name" />
-    </div>
-
-    <!-- PRICE -->
-    <div>
-        <label><strong>Price</strong></label>
-        <input style="width:100%; padding:6px;"
-               type="number"
-               placeholder="Enter price here"
-               @bind="newProduct.Price" />
-    </div>
-
-    <!-- DESCRIPTION -->
-    <div>
-        <label><strong>Description</strong></label>
-        <input style="width:100%; padding:6px;"
-               placeholder="Enter product description here"
-               @bind="newProduct.Description" />
-    </div>
-
-    <!-- CATEGORY -->
-    <div>
-        <label><strong>Category</strong></label>
-        <select style="width:100%; padding:6px;"
-                @bind="newProduct.CategoryId">
-
-            <option value="">Select Category</option>
-
-            @foreach (var category in categories)
+            @foreach (var product in products)
             {
-                <option value="@category.Id">
-                    @category.Name
-                </option>
+                <MudPaper Class="pa-4">
+
+                    <MudText Typo="Typo.h6">@product.Name</MudText>
+
+                    <MudText>
+                        <b>Price:</b> @product.Price
+                    </MudText>
+
+                    <MudText Class="mb-2">
+                        @product.Description
+                    </MudText>
+
+                    <MudText Typo="Typo.caption">
+                        Category: @product.CategoryName
+                    </MudText>
+
+                    <MudStack Row="true" Spacing="2" Class="mt-3">
+
+                        <MudButton Color="Color.Warning"
+                                   Size="Size.Small"
+                                   OnClick="@(() => OpenEdit(product))">
+                            Edit
+                        </MudButton>
+
+                        <MudButton Color="Color.Error"
+                                   Size="Size.Small"
+                                   OnClick="@(() => ConfirmDelete(product.Id))">
+                            Delete
+                        </MudButton>
+
+                    </MudStack>
+
+                </MudPaper>
             }
 
-        </select>
-    </div>
+        </div>
+    }
 
-    <!-- BUTTONS -->
-    <div style="display:flex; gap:10px; margin-top:10px;">
-
-        @if (!isEditing)
-        {
-            <button style="background:green; color:white; border:none; padding:6px 12px; border-radius:5px;"
-                    disabled="@(!IsFormValid())"
-                    @onclick="Add">
-                Add
-            </button>
-        }
-        else
-        {
-            <button style="background:orange; color:white; border:none; padding:6px 12px; border-radius:5px;"
-                    disabled="@(!IsFormValid())"
-                    @onclick="Update">
-                Update
-            </button>
-
-            <button style="background:gray; color:white; border:none; padding:6px 12px; border-radius:5px;"
-                    @onclick="CancelEdit">
-                Cancel
-            </button>
-        }
-
-    </div>
 </div>
-
-<!-- ===================== PRODUCTS ===================== -->
-@if (products == null)
-{
-    <p>Loading...</p>
-}
-else
-{
-    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:15px;">
-
-        @foreach (var product in products)
-        {
-            <div style="border:1px solid #ddd; padding:15px; border-radius:10px;">
-
-                <h4>@product.Name</h4>
-                <p><strong>Price:</strong> @product.Price</p>
-                <p>@product.Description</p>
-
-                <small>Category: @product.CategoryName</small>
-
-                <div style="margin-top:10px; display:flex; gap:5px;">
-
-                    <button style="background:orange; color:white; border:none; padding:5px 10px;"
-                            @onclick="() => Edit(product)">
-                        Edit
-                    </button>
-
-                    <button style="background:red; color:white; border:none; padding:5px 10px;"
-                            @onclick="() => Delete(product.Id)">
-                        Delete
-                    </button>
-
-                </div>
-
-            </div>
-        }
-    </div>
-}
 
 @code {
 
     private IEnumerable<ProductDTOClient>? products;
-    private List<CategoryDTOClient> categories = new();
 
-    private ProductDTOClient newProduct = new();
-    private string? message;
-    private string? errorMessage;
-
-    private bool isEditing = false;
-    private int editingId;
+    // Configuration settings to make the product modal wider and cleaner
+    private readonly DialogOptions _productDialogOptions = new()
+    {
+        CloseButton = true,
+        MaxWidth = MaxWidth.Medium, // Fixes the squished look by giving it a medium width
+        FullWidth = true
+    };
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadProducts();
+    }
+
+    private async Task LoadProducts()
+    {
         products = await ProductService.GetProducts();
-        categories = await ProductService.GetCategories();
     }
 
-    // ================= VALIDATION =================
-    private bool Validate()
+    // OPEN ADD DIALOG
+    private async Task OpenAdd()
     {
-        errorMessage = null;
+        // Leaving the first title string empty ("") because MudDialog's TitleContent inside the modal handles it
+        var dialog = DialogService.Show<ProductDialog>("", _productDialogOptions);
+        var result = await dialog.Result;
 
-        if (string.IsNullOrWhiteSpace(newProduct.Name))
-        {
-            errorMessage = "Product name is required.";
-            return false;
-        }
-
-        if (newProduct.Price <= 0)
-        {
-            errorMessage = "Price must be greater than 0.";
-            return false;
-        }
-
-        if (string.IsNullOrWhiteSpace(newProduct.Description))
-        {
-            errorMessage = "Description is required.";
-            return false;
-        }
-
-        if (newProduct.CategoryId <= 0)
-        {
-            errorMessage = "Please select a category.";
-            return false;
-        }
-
-        return true;
+        if (!result.Canceled)
+            await LoadProducts();
     }
 
-    // ================= CREATE =================
-    private async Task Add()
+    // OPEN EDIT DIALOG (IMPORTANT: PASS COPY, NOT REFERENCE)
+    private async Task OpenEdit(ProductDTOClient product)
     {
-        if (!Validate()) return;
-
-        var created = await ProductService.AddProduct(newProduct);
-
-        if (created != null)
+        var parameters = new DialogParameters
         {
-            products = await ProductService.GetProducts();
-            newProduct = new ProductDTOClient();
-
-            message = "Product added successfully!";
-            await ClearMessage();
-        }
-    }
-
-    // ================= UPDATE =================
-    private async Task Update()
-    {
-        if (!Validate()) return;
-
-        var success = await ProductService.UpdateProduct(newProduct);
-
-        if (success)
-        {
-            products = await ProductService.GetProducts();
-            newProduct = new ProductDTOClient();
-
-            isEditing = false;
-            editingId = 0;
-
-            message = "Product updated successfully!";
-            await ClearMessage();
-        }
-    }
-
-    private void Edit(ProductDTOClient product)
-    {
-        newProduct = new ProductDTOClient
-        {
-            Id = product.Id,
-            Name = product.Name,
-            Price = product.Price,
-            Description = product.Description,
-            CategoryId = product.CategoryId,
-            CategoryName = product.CategoryName
+            ["Product"] = new ProductDTOClient
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Price = product.Price,
+                Description = product.Description,
+                ImageURL = product.ImageURL,
+                QuantityInStock = product.QuantityInStock,
+                CategoryId = product.CategoryId,
+                CategoryName = product.CategoryName
+            }
         };
 
-        isEditing = true;
-        editingId = product.Id;
+        // Added _productDialogOptions here to widen the edit modal as well
+        var dialog = DialogService.Show<ProductDialog>("", parameters, _productDialogOptions);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+            await LoadProducts();
     }
 
-    private void CancelEdit()
+    // DELETE CONFIRM DIALOG
+    private async Task ConfirmDelete(int id)
     {
-        newProduct = new ProductDTOClient();
-        isEditing = false;
-        editingId = 0;
-        errorMessage = null;
-    }
-
-    private async Task Delete(int id)
-    {
-        var success = await ProductService.DeleteProduct(id);
-
-        if (success)
+        var parameters = new DialogParameters
         {
-            products = await ProductService.GetProducts();
-            message = "Product deleted successfully!";
-            await ClearMessage();
+            ["ContentText"] = "Are you sure you want to delete this product?"
+        };
+
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        var dialog = DialogService.Show<SimpleConfirmDialog>("Confirm Delete", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await ProductService.DeleteProduct(id);
+            await LoadProducts();
+            Snackbar.Add("Product deleted", Severity.Success);
         }
-    }
-
-    private async Task ClearMessage()
-    {
-        await Task.Delay(2000);
-        message = null;
-        StateHasChanged();
-    }
-
-    private bool IsFormValid()
-    {
-        return !string.IsNullOrWhiteSpace(newProduct.Name)
-               && newProduct.Price > 0
-               && !string.IsNullOrWhiteSpace(newProduct.Description)
-               && newProduct.CategoryId > 0;
     }
 }

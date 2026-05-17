@@ -1,0 +1,115 @@
+﻿@using MudBlazor
+@using Shoppi.Client.DTOs.ProductDTOClient
+@using Shoppi.Client.Services.Contracts
+
+@inject IProductService ProductService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h5">
+            @(IsEditMode ? "Edit Product" : "Add New Product")
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudTextField @bind-Value="Product.Name"
+                      Label="Product Name"
+                      Variant="Variant.Outlined"
+                      Required="true"
+                      Class="mb-3" />
+
+        <MudNumericField T="decimal"
+                         @bind-Value="Product.Price"
+                         Label="Price"
+                         Variant="Variant.Outlined"
+                         Class="mb-3" />
+
+        <MudTextField @bind-Value="Product.Description"
+                      Label="Description"
+                      Variant="Variant.Outlined"
+                      Lines="3"
+                      Class="mb-3" />
+
+        @* Note: The CategoryId input field has been completely removed from here! *@
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-3">
+                @errorMessage
+            </MudAlert>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel" Color="Color.Default">
+            Cancel
+        </MudButton>
+
+        <MudButton OnClick="Save"
+                   Color="Color.Primary"
+                   Variant="Variant.Filled">
+            Save
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public ProductDTOClient Product { get; set; } = new();
+
+    private string? errorMessage;
+    private bool IsEditMode => Product.Id != 0;
+
+    private async Task Save()
+    {
+        errorMessage = null;
+
+        // Fallback: Ensure CategoryId has a valid value so the backend database doesn't reject it
+        if (Product.CategoryId <= 0)
+        {
+            Product.CategoryId = 1; // Assigns a default category ID behind the scenes
+        }
+
+        // Simple validation checks
+        if (string.IsNullOrWhiteSpace(Product.Name))
+        {
+            errorMessage = "Name is required";
+            return;
+        }
+
+        if (Product.Price <= 0)
+        {
+            errorMessage = "Price must be greater than 0";
+            return;
+        }
+
+        bool success;
+
+        if (!IsEditMode)
+        {
+            var result = await ProductService.AddProduct(Product);
+            success = result != null;
+        }
+        else
+        {
+            success = await ProductService.UpdateProduct(Product);
+        }
+
+        if (success)
+        {
+            Snackbar.Add(IsEditMode ? "Product updated" : "Product created", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        else
+        {
+            errorMessage = "Operation failed. Please try again.";
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+}
