@@ -1,5 +1,4 @@
 ﻿using Shoppi.Api.Entities;
-using Shoppi.Client.DTOs.ProductDTOClient;
 
 namespace Shoppi.Api.Repositories.Contracts
 {

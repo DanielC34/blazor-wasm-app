@@ -19,8 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Shoppi\Shoppi.Client\Shoppi.Client.csproj" />
-    <ProjectReference Include="..\Shoppi\Shoppi\Shoppi.csproj" />
+    
   </ItemGroup>
 
 </Project>

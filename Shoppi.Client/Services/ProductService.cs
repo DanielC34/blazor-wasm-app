@@ -14,15 +14,23 @@ namespace Shoppi.Client.Services
         }
 
         // Get all products with error handling
+        // Updated GetProducts with detailed console logging
         public async Task<IEnumerable<ProductDTOClient>> GetProducts()
         {
             try
             {
-                return await _http.GetFromJsonAsync<IEnumerable<ProductDTOClient>>("api/products")
-                       ?? new List<ProductDTOClient>();
+                Console.WriteLine("Calling API: api/products");
+
+                var result = await _http.GetFromJsonAsync<IEnumerable<ProductDTOClient>>("api/products");
+
+                Console.WriteLine("Products loaded successfully");
+
+                return result ?? new List<ProductDTOClient>();
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"ERROR LOADING PRODUCTS: {ex.Message}");
+
                 return new List<ProductDTOClient>();
             }
         }
